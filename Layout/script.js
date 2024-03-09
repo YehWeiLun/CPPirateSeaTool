@@ -1,4 +1,4 @@
 var link = document.createElement('link');
-link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+link.href = "https://yehweilun.github.io/CPPirateSeaTool/Layout/styles.css"
 link.rel="stylesheet";
 document.head.appendChild(link);
