@@ -1,5 +1,5 @@
 
-
+(function(){
 function formPost(body) {    
     return fetch("http://maril.sakura.ne.jp/cgi-bin/sea/sea.cgi", {
         "headers": {
@@ -58,7 +58,8 @@ document.querySelectorAll('input[name="target"]').forEach(function (item) {
 
 let localStorageAccessor = new LocalStorageAccessor();
 
-(function(){
+
+    console.log('script loaded');
     if (localStorageAccessor.get("target")) {
         let moveForm = getMoveForm();
         moveForm.target = localStorageAccessor.get("target");
