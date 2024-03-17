@@ -57,8 +57,8 @@ document.querySelectorAll('input[name="target"]').forEach(function (item) {
 });
 
 let localStorageAccessor = new LocalStorageAccessor();
-//頁面完全載入後執行
-window.onload = function () {
+
+(function(){
     if (localStorageAccessor.get("target")) {
         let moveForm = getMoveForm();
         moveForm.target = localStorageAccessor.get("target");
@@ -75,5 +75,4 @@ window.onload = function () {
     
     }
     
-}
-
+})()
