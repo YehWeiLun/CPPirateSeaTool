@@ -1,132 +1,79 @@
-(function () {
-    class ParameterLoader {
-        constructor(accessor) {
-            var refreshTime = accessor.get('refreshTime');
-            this.refreshTime = refreshTime ? parseInt(refreshTime) : 0;
-            
-        }
-    }
-    class LocalStorageAccessor {
-        constructor() {
-            this.storage = window.localStorage;
-        }
-        set(key, value) {
-            this.storage.setItem(key, value);
-        }
-        get(key) {
-            return this.storage.getItem(key);
-        }
-    }
-    class ActionData {
-        constructor(form) {
-            this.name = form.querySelector('input[name=mode]').value;
-            this.form = form;
-        }
-    }
-    class FleetData {
-        constructor() {
-            this.fleetTable = null;            
-            this.initialize();
-            this.location = this.getLocation(this.fleetTable.querySelector("tr:nth-child(2) > td:nth-child(2)").innerHTML);
-            this.money = this.getMoney(this.fleetTable.querySelector("tr:nth-child(4) > td:nth-child(2)").innerHTML);
-            this.inventory = this.getInventory(this.fleetTable.querySelector("tr:nth-child(5) > td:nth-child(2)").innerHTML);
-            this.movingInput = document.querySelector('input[name=down]')?.value;
-        }
-        getLocation(str){
-            //亞洲(物價：0.00％ 稅率：0％ 天氣：<font color="#A35709">四季分明</font> 蝕之刻尚未到來...：<font color="#FFCC00">125 ‱</font>)
-            var match = str.match(/(.+)\(物價：(.+)％ 稅率：(.+)％ 天氣：<font color="#A35709">(.+)<\/font> 蝕之刻尚未到來...：<font color="#FFCC00">(.+) ‱<\/font>\)/);            
-            if(match == null) return null;            
-            var location = {
-                name: match[1],
-                price: parseFloat(match[2]),
-                tax: parseFloat(match[3])                
-            };
-            return location;
-        }
-        getMoney(str){                       
-            var match = str.match(/現金：(.+) G/);
-            if(match == null) return null;            
-            return parseFloat(match[1].replace(/,/g, ""));            
-        }
-        getInventory(str){                        
-            var match = str.match(/全部：(.+)　現有：(.+)　剩餘：(.+)/);            
-            if(match == null) return null;                                   
-            var match2 = match[3].match(/水手：(.+)人 基礎戰力：(.+) 食物：(.+) 貨物：(.+),(.+)/);
-            if(match2 == null) return null;                        
-            return {
-                current: parseFloat(match[1]),
-                max: parseFloat(match[2]),
-                sailor: parseFloat(match2[1])                                
-            };
-        }
-        initialize() {
-            var fleetTitleCell = null;
-            document.querySelectorAll("td[align=center]").forEach(td => {
-                if (td.innerHTML == "艦隊資訊") {
-                    fleetTitleCell = td;
-                }
-            });
-            if (fleetTitleCell == null) {
-                alert("找不到艦隊資訊");
-                throw "找不到艦隊資訊";
-            }
 
-            var tdParent = fleetTitleCell.parentNode;
-            while (tdParent && tdParent.nodeName != 'TABLE') {
-                tdParent = tdParent.parentNode;
-            }
-            if (tdParent) {
-                this.fleetTable = tdParent;
-            }
-        }
-    }
 
-    class PageModifier {
-        constructor() {
-            // 取得當前頁面的所有表單
-            this.actions = getAllActionsForm().map(f => new ActionData(f));
-            
-            // 解除右鍵限制
-            unlockRightClick();
-            this.fleetData = new FleetData();
-            console.log.apply(null, this.actions.map(a => a.name));
-        }
+function formPost(body) {    
+    return fetch("http://maril.sakura.ne.jp/cgi-bin/sea/sea.cgi", {
+        "headers": {
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7,ja;q=0.6",
+            "cache-control": "no-cache",
+            "content-type": "application/x-www-form-urlencoded",
+            "pragma": "no-cache",
+            "upgrade-insecure-requests": "1"
+        },
+        "referrer": "http://maril.sakura.ne.jp/cgi-bin/sea/sea.cgi",
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "body": body,
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    });
+}
+
+class LocalStorageAccessor {
+    constructor() {
+        this.storage = window.localStorage;
     }
-    /// 取得所有表單
-    function getAllActionsForm() {
-        var inputs = document.querySelectorAll('input[name=mode]');
-        var forms = [];
-        inputs.forEach(ipt => {
-            let currentParentNode = ipt.parentNode;
-            if (currentParentNode.nodeName == 'FORM') forms.push(currentParentNode);
-            while (currentParentNode && currentParentNode.nodeName != 'FORM') {
-                currentParentNode = currentParentNode.parentNode;
-                if (currentParentNode.nodeName == 'FORM') forms.push(currentParentNode);
+    set(key, value) {
+        this.storage.setItem(key, value);
+    }
+    get(key) {
+        return this.storage.getItem(key);
+    }
+}
+// 取消所有input submit預設事件
+document.querySelectorAll('input[type="submit"]').forEach(function (item) {
+    item.addEventListener('click', function (e) {
+        var currentNode = item;
+        var myForm = null;
+        while (myForm == null && currentNode.nodeName != "FORM") {
+            currentNode = currentNode.parentNode;
+            if (currentNode.nodeName == "FORM") {
+                myForm = currentNode;
             }
+        }
+        if (myForm.querySelector("input[name='mode'][value='move']")) {
+            localStorageAccessor.set("target", myForm.querySelector("input[name='target'][checked]").value.replace('△','%81%A2'));
+        }
+    });
+});
+// 幫所有input[name=target]加上click事件,註銷所有input[name=target]的checked,並將當前點擊的input[name=target]設為checked
+document.querySelectorAll('input[name="target"]').forEach(function (item) {
+    item.addEventListener('click', function (e) {
+        document.querySelectorAll('input[name="target"]').forEach(function (item) {
+            item.removeAttribute("checked");
         });
-        return forms;
-    }
-    /// 解除右鍵限制
-    function unlockRightClick() {
-        function R(a) {
-            ona = "on" + a;
-            if (window.addEventListener) window.addEventListener(a, function (e) { for (var n = e.originalTarget; n; n = n.parentNode) n[ona] = null; }, true);
-            window[ona] = null; document[ona] = null; if (document.body) document.body[ona] = null;
-        }
-        R("contextmenu");
-        R("click");
-        R("mousedown");
-        R("mouseup");
-        R("selectstart");
-    }
+        item.setAttribute("checked", "checked");
+    });
+});
 
-    var pageModifier = window.pageModifier = new PageModifier();
-    var parameterLoader = new ParameterLoader(new LocalStorageAccessor());
-    if(pageModifier.fleetData.movingInput){
-        if(parameterLoader.refreshTime){
-            var reloadTime = Math.random()*5000 + 1000 * parameterLoader.refreshTime;
-            console.log(`reload in ${Math.round(reloadTime/1000,2)} seconds.`);
-            setTimeout(()=>{window.location.reload();}, reloadTime);
-        }
+let localStorageAccessor = new LocalStorageAccessor();
+//頁面完全載入後執行
+window.onload = function () {
+    if (localStorageAccessor.get("target")) {
+        let moveForm = getMoveForm();
+        moveForm.target = localStorageAccessor.get("target");
+        moveForm.reload = document.querySelector("input[name='reload']").value;
+
+        var body = Object.keys(moveForm).map(key => `${key}=${moveForm[key]}`).join("&")
+        console.log(body);
+        setTimeout(() => {            
+            formPost(body).then(()=>setTimeout(()=>{
+                localStorageAccessor.set("target", "");
+                window.location.reload();
+            },1100));
+        }, 1100);
+    
     }
-})()
+    
+}
+
