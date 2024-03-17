@@ -1,4 +1,22 @@
 (function () {
+    class ParameterLoader {
+        constructor(accessor) {
+            var refreshTime = accessor.get('refreshTime');
+            this.refreshTime = refreshTime ? parseInt(refreshTime) : 0;
+            
+        }
+    }
+    class LocalStorageAccessor {
+        constructor() {
+            this.storage = window.localStorage;
+        }
+        set(key, value) {
+            this.storage.setItem(key, value);
+        }
+        get(key) {
+            return this.storage.getItem(key);
+        }
+    }
     class ActionData {
         constructor(form) {
             this.name = form.querySelector('input[name=mode]').value;
@@ -67,6 +85,7 @@
         constructor() {
             // 取得當前頁面的所有表單
             this.actions = getAllActionsForm().map(f => new ActionData(f));
+            
             // 解除右鍵限制
             unlockRightClick();
             this.fleetData = new FleetData();
@@ -102,9 +121,12 @@
     }
 
     var pageModifier = window.pageModifier = new PageModifier();
+    var parameterLoader = new ParameterLoader(new LocalStorageAccessor());
     if(pageModifier.fleetData.movingInput){
-        var reloadTime = Math.random()*1000 * 20;
-        console.log(`reload in ${Math.round(reloadTime/1000,2)} seconds.`);
-        setTimeout(()=>{window.location.reload();}, reloadTime);
+        if(parameterLoader.refreshTime){
+            var reloadTime = Math.random()*5000 + 1000 * parameterLoader.refreshTime;
+            console.log(`reload in ${Math.round(reloadTime/1000,2)} seconds.`);
+            setTimeout(()=>{window.location.reload();}, reloadTime);
+        }
     }
 })()
